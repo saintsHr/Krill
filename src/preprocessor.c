@@ -89,13 +89,13 @@ void deleteLine(char *buffer, long line) {
 }
 
 void preprocessor(char* src, long size, const char* filename){
-    for (long i = 0; i < size; i++){
+    for (long i = 0; src[i] != '\0'; i++){
         // checks if theres any non-ascii character
         if (!isAscii(src[i])) {
             logMsg(
                 getLine(src, src + i),
                 getColumn(src, src + i),
-                5,
+                6,
                 "Invalid Character",
                 "Non-ASCII character found",
                 "Use only ASCII characters in source file",
@@ -106,10 +106,14 @@ void preprocessor(char* src, long size, const char* filename){
         }
 
         // checks for line comments & remove them
-        if (src[i] == '/' && src[i + 1] == '/') {
+        if (src[i] == '/' && src[i + 1] != '\0' && src[i + 1] == '/') {
             int line = getLine(src, src + i);
             deleteLine(src, line);
+            i--;
         } 
+
+        // checks for empty lines & remove them
+        
     }
 
     return;

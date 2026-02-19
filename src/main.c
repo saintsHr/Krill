@@ -108,16 +108,34 @@ int main(int argc, char** argv) {
             "unknown",
             FATAL
         );
+        free(buffer);
+        fclose(file);
         exit(1);
     }
 
     // reads the file & load to buffer
-    fread(buffer, 1, fileSize, file);
+    size_t readBytes = fread(buffer, 1, fileSize, file);
+    if (readBytes != fileSize) {
+        logMsg(
+            0,
+            0,
+            4,
+            "Failed to read file",
+            "Could not read the entire file",
+            "Check file integrity",
+            filename,
+            FATAL
+        );
+        free(buffer);
+        fclose(file);
+        exit(1);
+    }
     buffer[fileSize] = '\0';
     fclose(file);
 
     // flags
-    bool flag_help = false;
+    bool  flag_help = false;
+    char* output_filename = "output.asm";
 
     // parses arguments for flags
     for (int i = 2; i < argc; i++) {
@@ -127,11 +145,17 @@ int main(int argc, char** argv) {
                 case 'h':
                     flag_help = true;
                     break;
+                
+                case 'o':
+                    output_filename = argv[i + 1];
+                    i++;
+                    break;
+
                 default:
                     logMsg(
                         0,
                         0,
-                        4,
+                        5,
                         "Incorrect Usage",
                         "Unknown flag provided: -%c",
                         "try using 'krill -h'",
@@ -144,14 +168,49 @@ int main(int argc, char** argv) {
             }
         }
     }
-
-    // raw
-    printf(buffer);
     
+    size_t bufferSize = strlen(buffer);
+
     // preprocessor
     preprocessor(buffer, fileSize, filename);
-    printf(buffer);
+    bufferSize = strlen(buffer);
 
+    // tryes to open output file
+    FILE* outputFile = fopen(output_filename, "w");
+    if (!outputFile) {
+        logMsg(
+            0,
+            0,
+            7,
+            "Cannot open file",
+            "Failed to open output file (%s)",
+            "Ensure that you have disk space and writing permission",
+            "unknown",
+            FATAL,
+
+            output_filename
+        );
+        exit(1);
+    }
+
+    // tryes to write the buffer to the output file
+    size_t written = fwrite(buffer, 1, bufferSize, outputFile);
+    if (written != bufferSize) {
+        logMsg(
+            0,
+            0,
+            8,
+            "Cannot write file",
+            "Failed write output to file",
+            "Make sure you have enough RAM and try again",
+            "unknown",
+            FATAL
+        );
+        fclose(outputFile);
+        exit(1);
+    }
+
+    fclose(outputFile);
     free(buffer);
     return 0;
 }
