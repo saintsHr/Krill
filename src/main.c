@@ -25,6 +25,7 @@ SOFTWARE.
 */
 
 #include "log.h"
+#include "preprocessor.h"
 
 #include <stdbool.h>
 #include <string.h>
@@ -49,7 +50,7 @@ int main(int argc, char** argv) {
             "unknown",
             FATAL
         );
-        return 1;
+        exit(1);
     }
 
     const char* filename = argv[1];
@@ -68,7 +69,7 @@ int main(int argc, char** argv) {
 
             filename
         );
-        return 1;
+        exit(1);
     }
 
     // tryes to open input file
@@ -86,7 +87,7 @@ int main(int argc, char** argv) {
 
             filename
         );
-        return 1;
+        exit(1);
     }
 
     // gets file size
@@ -107,6 +108,7 @@ int main(int argc, char** argv) {
             "unknown",
             FATAL
         );
+        exit(1);
     }
 
     // reads the file & load to buffer
@@ -138,11 +140,16 @@ int main(int argc, char** argv) {
 
                         flag
                     );
-                    return 1;
+                    exit(1);
             }
         }
     }
 
+    // raw
+    printf(buffer);
+    
+    // preprocessor
+    preprocessor(buffer, fileSize, filename);
     printf(buffer);
 
     free(buffer);
