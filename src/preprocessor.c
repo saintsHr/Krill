@@ -80,48 +80,55 @@ void preprocessor(char* src, long size, const char* filename) {
     char *read_ptr = src;
     char *write_ptr = src;
 
+    bool line_has_content = false;
+    char *line_start = write_ptr;
+
     while (*read_ptr) {
+        // Line comment
         if (read_ptr[0] == '/' && read_ptr[1] == '/') {
+            read_ptr += 2;
+
             while (*read_ptr && *read_ptr != '\n') read_ptr++;
-            if (*read_ptr == '\n') read_ptr++;
+
             continue;
         }
 
-        const char *line_start = read_ptr;
-        const char *line_end = line_start;
-        while (*line_end && *line_end != '\n') line_end++;
+        // Block comment
+        if (read_ptr[0] == '/' && read_ptr[1] == '*') {
+            read_ptr += 2;
 
-        bool empty = true;
-        for (const char *p = line_start; p < line_end; p++) {
-            if (*p != ' ' && *p != '\t') {
-                empty = false;
-                break;
-            }
-        }
-        if (empty) {
-            read_ptr = (*line_end) ? line_end + 1 : line_end;
+            while (*read_ptr && !(read_ptr[0] == '*' && read_ptr[1] == '/')) read_ptr++;
+            if (*read_ptr) read_ptr += 2;
+
             continue;
         }
 
-        for (const char *p = line_start; p < line_end; p++) {
-            if (!isAscii(*p)) {
-                logMsg(
-                    getLine(src, p),
-                    getColumn(src, p),
-                    6,
-                    "Invalid Character",
-                    "Non-ASCII character found",
-                    "Use only ASCII characters in source file",
-                    filename,
-                    FATAL
-                );
-                exit(1);
-            }
+        if (!isAscii(*read_ptr)) {
+            logMsg(
+                getLine(src, read_ptr),
+                getColumn(src, read_ptr),
+                6,
+                "Invalid Character",
+                "Non-ASCII character found",
+                "Use only ASCII characters in source file",
+                filename,
+                FATAL
+            );
+            exit(1);
         }
 
-        while (read_ptr <= line_end) {
-            *write_ptr++ = *read_ptr++;
+        if (*read_ptr == '\n') {
+            if (line_has_content) *write_ptr++ = '\n';
+            else write_ptr = line_start;
+
+            line_start = write_ptr;
+            line_has_content = false;
+            read_ptr++;
+            continue;
         }
+        if (*read_ptr != ' ' && *read_ptr != '\t') line_has_content = true;
+
+        *write_ptr++ = *read_ptr++;
     }
 
     *write_ptr = '\0';
