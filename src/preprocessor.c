@@ -38,29 +38,21 @@ bool isAscii(char c) {
 
 int getLine(const char *start, const char *pos) {
     int line = 1;
-    const char *p = start;
-    while (p < pos) {
-        if (*p == '\n') {
-            line++;
-        }
-        p++;
+    for (const char *p = start; p < pos; p++) {
+        if (*p == '\n') line++;
     }
     return line;
 }
 
 int getColumn(const char *start, const char *pos) {
-    int col = 1;
-    const char *p = start;
-    const char *last_newline = start - 1;
-
-    while (p < pos) {
-        if (*p == '\n') {
-            last_newline = p;
-        }
-        p++;
+    const char *last_newline = NULL;
+    for (const char *p = start; p < pos; p++) {
+        if (*p == '\n') last_newline = p;
     }
-    col = (int)(pos - last_newline);
-    return col;
+    if (last_newline)
+        return (int)(pos - last_newline);
+    else
+        return (int)(pos - start + 1);
 }
 
 void deleteLine(char *buffer, long line) {
@@ -70,9 +62,7 @@ void deleteLine(char *buffer, long line) {
     int current_line = 1;
 
     while (*start && current_line < line) {
-        if (*start == '\n') {
-            current_line++;
-        }
+        if (*start == '\n') current_line++;
         start++;
     }
     line_start = start;
@@ -80,41 +70,59 @@ void deleteLine(char *buffer, long line) {
     if (!*line_start) return;
 
     line_end = line_start;
-    while (*line_end && *line_end != '\n') {
-        line_end++;
-    }
+    while (*line_end && *line_end != '\n') line_end++;
     if (*line_end == '\n') line_end++;
 
     memmove(line_start, line_end, strlen(line_end) + 1);
 }
 
-void preprocessor(char* src, long size, const char* filename){
-    for (long i = 0; src[i] != '\0'; i++){
-        // checks if theres any non-ascii character
-        if (!isAscii(src[i])) {
-            logMsg(
-                getLine(src, src + i),
-                getColumn(src, src + i),
-                6,
-                "Invalid Character",
-                "Non-ASCII character found",
-                "Use only ASCII characters in source file",
-                filename,
-                FATAL
-            );
-            exit(1);
+void preprocessor(char* src, long size, const char* filename) {
+    char *read_ptr = src;
+    char *write_ptr = src;
+
+    while (*read_ptr) {
+        if (read_ptr[0] == '/' && read_ptr[1] == '/') {
+            while (*read_ptr && *read_ptr != '\n') read_ptr++;
+            if (*read_ptr == '\n') read_ptr++;
+            continue;
         }
 
-        // checks for line comments & remove them
-        if (src[i] == '/' && src[i + 1] != '\0' && src[i + 1] == '/') {
-            int line = getLine(src, src + i);
-            deleteLine(src, line);
-            i--;
-        } 
+        const char *line_start = read_ptr;
+        const char *line_end = line_start;
+        while (*line_end && *line_end != '\n') line_end++;
 
-        // checks for empty lines & remove them
-        
+        bool empty = true;
+        for (const char *p = line_start; p < line_end; p++) {
+            if (*p != ' ' && *p != '\t') {
+                empty = false;
+                break;
+            }
+        }
+        if (empty) {
+            read_ptr = (*line_end) ? line_end + 1 : line_end;
+            continue;
+        }
+
+        for (const char *p = line_start; p < line_end; p++) {
+            if (!isAscii(*p)) {
+                logMsg(
+                    getLine(src, p),
+                    getColumn(src, p),
+                    6,
+                    "Invalid Character",
+                    "Non-ASCII character found",
+                    "Use only ASCII characters in source file",
+                    filename,
+                    FATAL
+                );
+                exit(1);
+            }
+        }
+
+        while (read_ptr <= line_end) {
+            *write_ptr++ = *read_ptr++;
+        }
     }
 
-    return;
+    *write_ptr = '\0';
 }
