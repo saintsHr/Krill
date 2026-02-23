@@ -26,4 +26,14 @@ SOFTWARE.
 
 #pragma once
 
-char* preprocessor(const char* src, const char* filename);
+typedef enum {
+    TOKEN_LITERAL,
+    TOKEN_IDENTIFIER,
+    TOKEN_INT,
+    TOKEN_MINUS,
+    TOKEN_PLUS,
+    TOKEN_MULT,
+    TOKEN_DIV,
+} TokenType;
+
+void lexer(char* src, long size, const char* filename);

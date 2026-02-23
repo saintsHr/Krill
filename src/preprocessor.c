@@ -76,30 +76,39 @@ void deleteLine(char *buffer, long line) {
     memmove(line_start, line_end, strlen(line_end) + 1);
 }
 
-void preprocessor(char* src, long size, const char* filename) {
-    char *read_ptr = src;
-    char *write_ptr = src;
+char* preprocessor(const char* src, const char* filename) {
+    size_t len = strlen(src);
+    char* output = malloc(len + 1);
+    if (!output) {
+        logMsg(0, 0, 3,
+            "Failed allocation",
+            "Failed to allocate memory for preprocessing",
+            "Try freeing RAM or reducing file size",
+            filename,
+            FATAL
+        );
+        exit(1);
+    }
+
+    const char* read_ptr = src;
+    char* write_ptr = output;
 
     bool line_has_content = false;
-    char *line_start = write_ptr;
+    char* line_start = write_ptr;
 
     while (*read_ptr) {
         // Line comment
         if (read_ptr[0] == '/' && read_ptr[1] == '/') {
             read_ptr += 2;
-
             while (*read_ptr && *read_ptr != '\n') read_ptr++;
-
             continue;
         }
 
         // Block comment
         if (read_ptr[0] == '/' && read_ptr[1] == '*') {
             read_ptr += 2;
-
             while (*read_ptr && !(read_ptr[0] == '*' && read_ptr[1] == '/')) read_ptr++;
             if (*read_ptr) read_ptr += 2;
-
             continue;
         }
 
@@ -126,10 +135,12 @@ void preprocessor(char* src, long size, const char* filename) {
             read_ptr++;
             continue;
         }
+
         if (*read_ptr != ' ' && *read_ptr != '\t') line_has_content = true;
 
         *write_ptr++ = *read_ptr++;
     }
 
     *write_ptr = '\0';
+    return output;
 }

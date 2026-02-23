@@ -1,3 +1,4 @@
+
 /*
 
 MIT License
@@ -23,7 +24,8 @@ OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 SOFTWARE.
 
 */
+#include "lexer.h"
 
-#pragma once
+void lexer(char* src, long size, const char* filename) {
 
-char* preprocessor(const char* src, const char* filename);
+}
